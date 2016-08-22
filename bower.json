@@ -1,0 +1,17 @@
+{
+	"name": "index",
+	"version": "1.0",
+	"main": "index.lua",
+	"dependencies": {
+
+	},
+	"ignore": [
+		"main.lua",
+		"config.lua",
+		"README.md",
+		"build.settings",
+		"path/",
+	],
+	"private": true
+}
+
