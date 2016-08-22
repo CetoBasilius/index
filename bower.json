@@ -10,7 +10,8 @@
 		"config.lua",
 		"README.md",
 		"build.settings",
-		"path/"
+		"path/",
+		".gitignore"
 	],
 	"private": true
 }
