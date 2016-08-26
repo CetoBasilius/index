@@ -6,7 +6,7 @@ Lua module path shortener for *require* function. Any call to require will be in
 ---
 
 - index.*addPath(**path1**, **path2**, **...**)*
-  - Adds path to index. Multiple paths can be added as different parameters.
+    - Adds path to index. Multiple paths can be added as different parameters.
 
 ### Example usage
 ---
