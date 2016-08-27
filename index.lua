@@ -22,6 +22,8 @@ local initialized
 
 local tableStringFunctions
 local paramsMetatable
+
+local wasFound
 -------------------------------------------- Local functions
 local function paramsInjector(moduleName)	
 	for index = 2, #loaders do
@@ -39,7 +41,11 @@ local function paramsInjector(moduleName)
 					lastRequirePath = nil -- Loader function will load module, which might have more requires inside.
 				end -- NOTE: Plugins can not be loaded with custom params, they need their own name, plugin.notifications turns out as plugin_notifications in OSX
 				
-				return loaderFunction(params)
+				wasFound[moduleName] = true
+				
+				local loaded = loaderFunction(params)
+				
+				return loaded
 			end
 		end
 	end
@@ -56,6 +62,11 @@ local function requireIntecept(moduleName)
 	
 	if result then 
 		return value
+	elseif wasFound[moduleName] then -- Module was found but something crashed.
+		if value then
+			package.loaded[moduleName] = nil -- Nil out userdata, since we could not get past loading.
+			error(value, 2)
+		end
 	else -- Module was not loaded by originalRequire, try indexed paths
 		if #paths > 0 then -- Check paths if any
 			for pathIndex = 1, #paths do
@@ -66,21 +77,27 @@ local function requireIntecept(moduleName)
 				-- Attempt path find, path.module
 				local newModuleName = paths[pathIndex]..DOT..moduleName
 				lastRequirePath = paths[pathIndex]..DOT -- lastRequirePath will be reset after injector loads
-				local result, requiredModule = pcall(originalRequire, newModuleName)
+				local newResult, newValue = pcall(originalRequire, newModuleName)
 				
-				if result then
-					return requiredModule
+				if newResult then
+					return newValue
 				else -- Try directory find, path.module.module
-					if lastRequirePath then -- lastRequirePath will be set to nil if module was found but crashed.
+					if wasFound[newModuleName] then -- Module was found, but it crashed inside
+						package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading.
+						error(newValue, 2)
+					else
 						newModuleName = newModuleName..DOT..moduleName
 						lastRequirePath = lastRequirePath..moduleName..DOT -- lastRequirePath will be reset after injector loads
-						result, requiredModule = pcall(originalRequire, newModuleName)
+						newResult, newValue = pcall(originalRequire, newModuleName)
 						
-						if result then
-							return requiredModule
+						if newResult then
+							return newValue
+						else
+							if wasFound[newModuleName] then -- Crashed inside
+								package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading.
+								error(newValue, 2)
+							end
 						end
-					elseif requiredModule then
-						error(requiredModule, 3)
 					end
 				end
 			end
@@ -96,6 +113,8 @@ end
 local function initialize()
 	if not initialized then
 		initialized = true
+		
+		wasFound = {}
 		
 		originalRequire = require -- Keep reference to original require function
 		require = requireIntecept -- We will intercept require with our own
