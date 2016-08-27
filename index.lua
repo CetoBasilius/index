@@ -71,12 +71,16 @@ local function requireIntecept(moduleName)
 				if result then
 					return requiredModule
 				else -- Try directory find, path.module.module
-					newModuleName = newModuleName..DOT..moduleName
-					lastRequirePath = lastRequirePath..moduleName..DOT -- lastRequirePath will be reset after injector loads
-					result, requiredModule = pcall(originalRequire, newModuleName)
-					
-					if result then
-						return requiredModule
+					if lastRequirePath then -- lastRequirePath will be set to nil if module was found but crashed.
+						newModuleName = newModuleName..DOT..moduleName
+						lastRequirePath = lastRequirePath..moduleName..DOT -- lastRequirePath will be reset after injector loads
+						result, requiredModule = pcall(originalRequire, newModuleName)
+						
+						if result then
+							return requiredModule
+						end
+					elseif requiredModule then
+						error(requiredModule, 3)
 					end
 				end
 			end
