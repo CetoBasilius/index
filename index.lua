@@ -96,6 +96,8 @@ local function requireIntecept(moduleName)
 							if wasFound[newModuleName] then -- Crashed inside
 								package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading.
 								error(newValue, 2)
+							else
+								lastRequirePath = nil
 							end
 						end
 					end
