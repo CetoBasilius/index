@@ -76,6 +76,11 @@ local function requireIntecept(moduleName)
 				
 				-- Attempt path find, path.module
 				local newModuleName = paths[pathIndex]..DOT..moduleName
+				
+				if package.loaded[newModuleName] then -- If package was already loaded, injector will not inject anything, return loaded.
+					return package.loaded[newModuleName]
+				end
+				
 				lastRequirePath = paths[pathIndex]..DOT -- lastRequirePath will be reset after injector loads
 				local newResult, newValue = pcall(originalRequire, newModuleName)
 				
@@ -83,10 +88,15 @@ local function requireIntecept(moduleName)
 					return newValue
 				else -- Try directory find, path.module.module
 					if wasFound[newModuleName] then -- Module was found, but it crashed inside
-						package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading.
+						package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading. (loaded first sets a userdata before loading the module.)
 						error(newValue, 2)
 					else
 						newModuleName = newModuleName..DOT..moduleName
+						
+						if package.loaded[newModuleName] then -- If package was already loaded, injector will not inject anything, return loaded.
+							return package.loaded[newModuleName]
+						end
+						
 						lastRequirePath = lastRequirePath..moduleName..DOT -- lastRequirePath will be reset after injector loads
 						newResult, newValue = pcall(originalRequire, newModuleName)
 						
