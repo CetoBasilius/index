@@ -1,4 +1,3 @@
-require("mobdebug").start()
 -------------------------------------------- Main
 require("index")("path.to.libs")("index") -- Add "path.to.libs" folder to index, add "index" namespace
 
