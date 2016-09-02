@@ -1,11 +1,15 @@
+require("mobdebug").start()
 -------------------------------------------- Main
-require("index")("path.to.libs") -- Add "path.to.libs" folder to index
+require("index")("path.to.libs")("index") -- Add "path.to.libs" folder to index, add "index" namespace
 
-local library1 = require("library1") -- Load "path.to.libs.library1" just by requiring "library1"
-local library2 = require("library2")
+local test = require("test")
+test.check()
 
-library1.check()
-library2.check()
+local testFirst = require("test.folder1.something")
+testFirst.check()
 
-local testLib1Again = require("library1")
-testLib1Again.check()
+require("index.path.internal")
+
+
+local testSecond = require("test.folder2.something")
+testSecond.checkOther()

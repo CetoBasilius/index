@@ -4,7 +4,7 @@ local moduleName = ...
 local index = setmetatable({}, {
 	__call = function(self, newPathString)
 		self.addPath(newPathString)
-		return self
+		return self.setNamespace
 	end,
 })
 -------------------------------------------- Constants
@@ -13,6 +13,9 @@ local DOT = "."
 local tableInsert = table.insert
 local stringGmatch = string.gmatch
 local loaders = package.loaders
+local stringFind = string.find
+local stringSub = string.sub
+local stringGsub = string.gsub
 -------------------------------------------- Vars
 local originalRequire
 local lastRequirePath
@@ -23,7 +26,8 @@ local initialized
 local tableStringFunctions
 local paramsMetatable
 
-local wasFound
+local wasFound, packages
+local namespace
 -------------------------------------------- Local functions
 local function paramsInjector(moduleName)	
 	for index = 2, #loaders do
@@ -35,7 +39,7 @@ local function paramsInjector(moduleName)
 				if lastRequirePath then -- Module was loaded off a custom path, init with custom params
 					params = setmetatable({
 						name = moduleName,
-						path = lastRequirePath,
+						path = lastRequirePath..(packages[moduleName] and (packages[moduleName]..".") or ""),
 					}, paramsMetatable)
 			
 					lastRequirePath = nil -- Loader function will load module, which might have more requires inside.
@@ -52,6 +56,15 @@ local function paramsInjector(moduleName)
 end
 
 local function requireIntecept(moduleName)
+	if namespace then
+		if moduleName ~= namespace then
+			local start, finish = stringFind(moduleName, namespace)
+			if finish and start == 1 then -- Found at beggining
+				moduleName =  stringSub(moduleName, finish + 2, -1)
+			end
+		end
+	end
+	
 	-- Check loaded first
 	if package.loaded[moduleName] then
 		return package.loaded[moduleName]
@@ -81,6 +94,9 @@ local function requireIntecept(moduleName)
 					return package.loaded[newModuleName]
 				end
 				
+				local packageName = stringGsub(moduleName, "%..*", "")
+				packages[newModuleName] = packageName
+				
 				lastRequirePath = paths[pathIndex]..DOT -- lastRequirePath will be reset after injector loads
 				local newResult, newValue = pcall(originalRequire, newModuleName)
 				
@@ -91,7 +107,9 @@ local function requireIntecept(moduleName)
 						package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading. (loaded first sets a userdata before loading the module.)
 						error(newValue, 2)
 					else
+						packages[newModuleName] = nil
 						newModuleName = newModuleName..DOT..moduleName
+						packages[newModuleName] = packageName
 						
 						if package.loaded[newModuleName] then -- If package was already loaded, injector will not inject anything, return loaded.
 							return package.loaded[newModuleName]
@@ -103,6 +121,8 @@ local function requireIntecept(moduleName)
 						if newResult then
 							return newValue
 						else
+							packages[newModuleName] = nil
+							
 							if wasFound[newModuleName] then -- Crashed inside
 								package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading.
 								error(newValue, 2)
@@ -127,6 +147,7 @@ local function initialize()
 		initialized = true
 		
 		wasFound = {}
+		packages = {}
 		
 		originalRequire = require -- Keep reference to original require function
 		require = requireIntecept -- We will intercept require with our own
@@ -163,6 +184,12 @@ function index.addPath(...)
 		if "string" == type(newPaths[index]) then
 			paths[#paths + 1] = newPaths[index]
 		end
+	end
+end
+
+function index.setNamespace(newNamespace)
+	if newNamespace and "string" == type(newNamespace) then
+		namespace = newNamespace
 	end
 end
 -------------------------------------------- Execution
