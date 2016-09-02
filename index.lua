@@ -2,8 +2,8 @@
 local moduleName = ...
 
 local index = setmetatable({}, {
-	__call = function(self, newPathString)
-		self.addPath(newPathString)
+	__call = function(self, ...)
+		self.addPath(...)
 		return self.setNamespace
 	end,
 })
@@ -18,7 +18,6 @@ local stringSub = string.sub
 local stringGsub = string.gsub
 -------------------------------------------- Vars
 local originalRequire
-local lastRequirePath
 
 local paths
 local initialized
@@ -26,7 +25,7 @@ local initialized
 local tableStringFunctions
 local paramsMetatable
 
-local wasFound, packages
+local wasFound, packages, requirePaths
 local namespace
 -------------------------------------------- Local functions
 local function paramsInjector(moduleName)	
@@ -36,10 +35,10 @@ local function paramsInjector(moduleName)
 		if "function" == type(loaderFunction) then
 			return function(moduleName) -- Hook function will send params as table, disguised as string. (As Corona SDK does)
 				local params = moduleName
-				if lastRequirePath then -- Module was loaded off a custom path, init with custom params
+				if requirePaths[moduleName] then -- Module was loaded off a custom path, init with custom params
 					params = setmetatable({
 						name = moduleName,
-						path = lastRequirePath..(packages[moduleName] and (packages[moduleName]..".") or ""),
+						path = requirePaths[moduleName]..(packages[moduleName] and (packages[moduleName]..".") or ""),
 					}, paramsMetatable)
 			
 					lastRequirePath = nil -- Loader function will load module, which might have more requires inside.
@@ -94,28 +93,33 @@ local function requireIntecept(moduleName)
 					return package.loaded[newModuleName]
 				end
 				
-				local packageName = stringGsub(moduleName, "%..*", "")
-				packages[newModuleName] = packageName
+				local packageName = stringGsub(moduleName, "%..*", "") -- This will be used in case it is an internal file
+				if moduleName ~= packageName then -- TEST
+					packages[newModuleName] = packageName
+				end
 				
-				lastRequirePath = paths[pathIndex]..DOT -- lastRequirePath will be reset after injector loads
+				requirePaths[newModuleName] = paths[pathIndex]..DOT
 				local newResult, newValue = pcall(originalRequire, newModuleName)
 				
 				if newResult then
 					return newValue
-				else -- Try directory find, path.module.module
+				else -- Try directory find, path.module.module (internal file)
 					if wasFound[newModuleName] then -- Module was found, but it crashed inside
 						package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading. (loaded first sets a userdata before loading the module.)
 						error(newValue, 2)
 					else
-						packages[newModuleName] = nil
+						requirePaths[newModuleName] = nil -- Was not loaded, set to nil
+						
 						newModuleName = newModuleName..DOT..moduleName
-						packages[newModuleName] = packageName
+						if moduleName ~= packageName then -- TEST
+							packages[newModuleName] = packageName
+						end
 						
 						if package.loaded[newModuleName] then -- If package was already loaded, injector will not inject anything, return loaded.
 							return package.loaded[newModuleName]
 						end
 						
-						lastRequirePath = lastRequirePath..moduleName..DOT -- lastRequirePath will be reset after injector loads
+						requirePaths[newModuleName] = paths[pathIndex]..DOT..moduleName..DOT
 						newResult, newValue = pcall(originalRequire, newModuleName)
 						
 						if newResult then
@@ -127,7 +131,7 @@ local function requireIntecept(moduleName)
 								package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading.
 								error(newValue, 2)
 							else
-								lastRequirePath = nil
+								requirePaths[newModuleName] = nil
 							end
 						end
 					end
@@ -146,6 +150,7 @@ local function initialize()
 	if not initialized then
 		initialized = true
 		
+		requirePaths = {}
 		wasFound = {}
 		packages = {}
 		
