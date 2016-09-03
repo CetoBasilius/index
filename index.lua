@@ -81,7 +81,7 @@ local function requireIntecept(moduleName)
 	elseif wasFound[moduleName] then -- Module was found but something crashed.
 		if value then
 			package.loaded[moduleName] = nil -- Nil out userdata, since we could not get past loading.
-			error(value, 2)
+			error("\n"..value, 2)
 		end
 	else -- Module was not loaded by originalRequire, try indexed paths
 		if #paths > 0 then -- Check paths if any
@@ -111,7 +111,7 @@ local function requireIntecept(moduleName)
 				else -- Try directory find, path.module.module (internal file)
 					if wasFound[newModuleName] then -- Module was found, but it crashed inside
 						package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading. (loaded first sets a userdata before loading the module.)
-						error(newValue, 2)
+						error("\n"..newValue, 2)
 					else
 						requirePaths[newModuleName] = nil -- Was not loaded, set to nil
 						
@@ -135,7 +135,7 @@ local function requireIntecept(moduleName)
 							
 							if wasFound[newModuleName] then -- Crashed inside
 								package.loaded[newModuleName] = nil -- Nil out userdata, since we could not get past loading.
-								error(newValue, 2)
+								error("\n"..newValue, 2)
 							else
 								requirePaths[newModuleName] = nil
 							end
@@ -148,7 +148,7 @@ local function requireIntecept(moduleName)
 	
 	-- Module could not be loaded any way, throw error
 	if not result and value then
-		error(value, 2)
+		error("\n"..value, 2)
 	end
 end
 
