@@ -56,6 +56,8 @@ local function paramsInjector(moduleName)
 end
 
 local function requireIntecept(moduleName)
+	local originalAskedModuleName = moduleName
+	
 	if namespace then
 		if moduleName ~= namespace then
 			local start, finish = stringFind(moduleName, namespace)
@@ -74,7 +76,7 @@ local function requireIntecept(moduleName)
 	local result, value = pcall(originalRequire, moduleName)
 	
 	if result then 
-		realPaths[moduleName] = moduleName
+		realPaths[originalAskedModuleName] = moduleName
 		return value
 	elseif wasFound[moduleName] then -- Module was found but something crashed.
 		if value then
@@ -104,7 +106,7 @@ local function requireIntecept(moduleName)
 				local newResult, newValue = pcall(originalRequire, newModuleName)
 				
 				if newResult then
-					realPaths[moduleName] = newModuleName
+					realPaths[originalAskedModuleName] = newModuleName
 					return newValue
 				else -- Try directory find, path.module.module (internal file)
 					if wasFound[newModuleName] then -- Module was found, but it crashed inside
@@ -126,7 +128,7 @@ local function requireIntecept(moduleName)
 						newResult, newValue = pcall(originalRequire, newModuleName)
 						
 						if newResult then
-							realPaths[moduleName] = newModuleName
+							realPaths[originalAskedModuleName] = newModuleName
 							return newValue
 						else
 							packages[newModuleName] = nil
