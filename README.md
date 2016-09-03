@@ -7,6 +7,10 @@ Lua module path shortener for *require* function. Any call to require will be in
 
 - index.*addPath(**path1**, **path2**, **...**)*
     - Adds path to index. Multiple paths can be added as different parameters.
+- index.*setNamespace(**newNamespace**)*
+    - Will set the namespace to **newNamespace**. Adding this means that requires will ignore the namespace if found, on requires.
+- index.*getRequirePath(**moduleName**)*
+    - Will return the real, full require path, if the module has been loaded by index. Will return **moduleName** otherwise.
 
 ### Example usage
 ---
@@ -24,7 +28,9 @@ Required modules will receive a table via `...` with the properties:
 
 ### Notes
 ---
-`require("index").addPath("path.to.libs")` and `require("index")("path.to.libs")` have the same effect.
+
+`require("index").addPath("path.to.libs")` and `require("index")("path.to.libs")` have the same effect. Call an aditional time to set a namespace.
+
 
 ---
 Copyright (c) 2014-2016, Basilio Germán

@@ -25,6 +25,7 @@ local initialized
 local tableStringFunctions
 local paramsMetatable
 
+local realPaths
 local wasFound, packages, requirePaths
 local namespace
 -------------------------------------------- Local functions
@@ -73,6 +74,7 @@ local function requireIntecept(moduleName)
 	local result, value = pcall(originalRequire, moduleName)
 	
 	if result then 
+		realPaths[moduleName] = moduleName
 		return value
 	elseif wasFound[moduleName] then -- Module was found but something crashed.
 		if value then
@@ -102,6 +104,7 @@ local function requireIntecept(moduleName)
 				local newResult, newValue = pcall(originalRequire, newModuleName)
 				
 				if newResult then
+					realPaths[moduleName] = newModuleName
 					return newValue
 				else -- Try directory find, path.module.module (internal file)
 					if wasFound[newModuleName] then -- Module was found, but it crashed inside
@@ -123,6 +126,7 @@ local function requireIntecept(moduleName)
 						newResult, newValue = pcall(originalRequire, newModuleName)
 						
 						if newResult then
+							realPaths[moduleName] = newModuleName
 							return newValue
 						else
 							packages[newModuleName] = nil
@@ -150,6 +154,7 @@ local function initialize()
 	if not initialized then
 		initialized = true
 		
+		realPaths = {}
 		requirePaths = {}
 		wasFound = {}
 		packages = {}
@@ -196,6 +201,10 @@ function index.setNamespace(newNamespace)
 	if newNamespace and "string" == type(newNamespace) then
 		namespace = newNamespace
 	end
+end
+
+function index.getRequirePath(moduleName)
+	return realPaths[moduleName] or moduleName
 end
 -------------------------------------------- Execution
 initialize()
