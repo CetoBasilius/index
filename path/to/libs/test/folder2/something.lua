@@ -1,7 +1,8 @@
 -------------------------------------------- folder2.something
 local params = ...
-local requirePath = params.path or ""
-local folderPath = requirePath:gsub("%.", "/")
+local requireName = params.name or "" -- This will return "path.to.libs.test.folder2.something" but we don't use it here.
+local requirePath = params.path or "" -- This will return "path.to.libs.test."
+local folderPath = requirePath:gsub("%.", "/") -- We convert dots to path to load image
 
 local something = {}
 -------------------------------------------- Module functions

@@ -1,7 +1,7 @@
 -------------------------------------------- folder1.another.something
 local params = ...
-local requirePath = params.path or ""
-local folderPath = requirePath:gsub("%.", "/")
+local requirePath = params.path or "" -- This will return "path.to.libs.test."
+local folderPath = requirePath:gsub("%.", "/") -- Convert dots to slashes to load resources relative to this path.
 
 local something2 = require("test.folder2.something")
 

@@ -1,4 +1,4 @@
--------------------------------------------- Test dependency 1
+-------------------------------------------- Test dependency 1 (This dependency is on the test folder and the main filename is test.lua)
 local params = ...
 
 local test = {}
