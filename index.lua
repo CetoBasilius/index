@@ -16,6 +16,10 @@ local loaders = package.loaders
 local stringFind = string.find
 local stringSub = string.sub
 local stringGsub = string.gsub
+local setmetatable = setmetatable
+local error = error
+local pairs = pairs
+local type = type
 -------------------------------------------- Vars
 local originalRequire
 
