@@ -209,6 +209,10 @@ function index.setNamespace(newNamespace)
 	end
 end
 
+function index.getNamespace()
+	return namespace
+end
+
 function index.getRequirePath(moduleName)
 	return realPaths[moduleName] or moduleName
 end
